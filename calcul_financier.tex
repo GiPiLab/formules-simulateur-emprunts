@@ -1,0 +1,236 @@
+\documentclass[12pt,a4paper]{scrartcl}
+\usepackage[francais]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1.5cm, includeheadfoot]{geometry}
+\usepackage{hyperref}
+
+
+\addtolength{\parskip}{\baselineskip}
+
+\title{Calcul de tableaux d'amortissement}
+\date{}
+
+
+\begin{document}
+\maketitle
+
+\section{Tableau d'amortissement}
+Un emprunt est caractérisé par :
+
+\begin{itemize}
+	\item une somme empruntée notée $K$ ;
+	\item un taux annuel, en \%, noté $i$ ;
+	\item une périodicité qui correspond à la fréquence de remboursement, noté $periodicite$. Elle est usuellement exprimée en parties d'une année et prend les valeurs 1 (remboursement annuel), 2 (semestriel), 4 (trimestriel) ou 12 (mensuel) ;
+	\item un taux périodique, noté $ip$ ;
+	\item une durée, notée $duree$, exprimée en périodes (mois, trimestres, semestres, années) ;
+	\item la date de la première échéance, notée $date\_initiale$ ;
+	\item la date de chaque échéance, notée $date$ ;
+	\item le numéro de l'échéance, noté $ieme$, entre 1 et $duree$ ;
+	\item le montant de chaque échéance, noté $pmt$ ;
+	\item la proportion de capital de chaque échéance, notée $ke$ ;
+	\item la proportion des intérêts de chaque échéance, notée $ipe$ ;
+	\item le capital restant dû, noté $crd$.
+\end{itemize}
+
+Un tableau d'amortissement comprendra les colonnes $ieme$, $date$, $pmt$, $ke$, $ipe$ et $crd$.
+
+\section{Capital constant}
+Cet emprunt est caractérisé par le fait que $ke$ est constant. 
+
+\subsection{Calcul de la première échéance}
+Connaissant $K$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de déterminer la valeur de $pmt_0$.
+
+\begin{enumerate}
+	\item Calculer $ip$ : 
+		\begin{equation}
+			ip=\frac{i}{periodicite}
+		\end{equation}
+	\item Déterminer la part de capital contenue dans chaque échéance : 
+		\begin{equation}
+			ke = \frac{K}{duree}
+		\end{equation}
+	\item Déterminer la part des intérêts contenue dans la première échéance : 
+		\begin{equation}
+			ipe_0=K \times ip
+		\end{equation}
+	\item En déduire la valeur de la première échéance :
+		\begin{equation}
+			pmt_0=ke+ipe_0
+		\end{equation}
+\end{enumerate}
+
+\subsection{Calcul du capital initial}
+Connaissant $pmt_0$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de déterminer la valeur du capital initial $K$.
+
+\begin{enumerate}
+	\item Calculer $ip$ :
+		\begin{equation}
+			ip=\frac{i}{periodicite}
+		\end{equation}
+	\item En déduire le montant du capital initial :
+		\begin{equation}
+			K=\frac{pmt_0 \times duree}{1+duree \times ip}
+		\end{equation}
+	\item Déterminer la part de capital contenue dans chaque échéance : 
+		\begin{equation}
+			ke = \frac{K}{duree}
+		\end{equation}
+	\item Déterminer la part des intérêts contenue dans la première échéance : 
+		\begin{equation}
+			ipe_0=K \times ip
+		\end{equation}
+\end{enumerate}
+
+\subsection{Calcul du taux annuel}
+Connaissant $K$, $pmt_0$, $periodicite$, $duree$ et $date\_initiale$, cherchons $i$.
+
+\begin{enumerate}
+	\item Déterminer la part de capital contenue dans chaque échéance : 
+		\begin{equation}
+			ke = \frac{K}{duree}
+		\end{equation}
+
+	\item Déterminer la part des intérêts contenue dans la première échéance : 
+		\begin{equation}
+			ipe_0=pmt_0-ke
+		\end{equation}
+
+	\item En déduire le taux annuel :
+		\begin{equation}
+			i=\frac{ipe_0}{K}
+		\end{equation}
+
+\end{enumerate}
+
+
+\subsection{Calcul du nombre de périodes}
+Connaissant $K$, $i$, $periodicite$, $pmt_0$ et $date\_initiale$, cherchons $duree$.
+
+\begin{enumerate}
+	\item Calculer $ip$ :
+		\begin{equation}
+			ip=\frac{i}{periodicite}
+		\end{equation}
+
+	\item Calculer $ipe_0$ :
+		\begin{equation}
+			ipe_0 = K \times ip
+		\end{equation}
+
+	\item Calculer $ke$ :
+		\begin{equation}
+			ke=pmt_0-ipe_0
+		\end{equation}
+
+	\item En déduire le nombre de périodes :
+		\begin{equation}
+			duree=\frac{K}{ke}
+		\end{equation} 
+
+\end{enumerate}
+
+\subsection{Construction du tableau d'amortissement}
+La première ligne du tableau d'amortissement se construit en fonction des données initiales, en utilisant les formules ci-dessus. Calculer aussi le capital restant dû de la première échéance avec :
+
+\begin{equation}
+	crd_0=K-ke
+\end{equation}
+
+Les $duree-1$ lignes successives se calculent itérativement :
+
+\begin{equation}
+	crd_i=crd_{i-1} - ke
+\end{equation}
+
+\begin{equation}
+	ipe_i=crd_{i-1} \times ip
+\end{equation}
+
+\begin{equation}
+	pmt_i=crd_{i-1} \times ip + ke
+\end{equation}
+
+\section{\'Echéance constante}
+Cet emprunt est caractérisé par le fait que la somme à payer chaque mois par l'emprunteur (l'échéance) est constante.
+
+\subsection{Calcul de l'échéance}
+Connaissant $K$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de déterminer la valeur de $pmt$.
+
+\begin{enumerate}
+	\item Calculer $ip$ : 
+		\begin{equation}
+			ip=\frac{i}{periodicite}
+		\end{equation}
+	\item Calculer ensuite la valeur de $pmt$ :
+		\begin{equation}
+			pmt=\frac{K\times ip}{1-(1+ip)^{-duree}}
+		\end{equation}
+\end{enumerate}
+
+\subsection{Calcul du capital initial}
+Connaissant $pmt$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de déterminer la valeur du capital initial $K$ accessible.
+
+\begin{enumerate}
+	\item Calculer $ip$ :
+		\begin{equation}
+			ip=\frac{i}{periodicite}
+		\end{equation}
+	\item Calculer $K$ :
+		\begin{equation}
+			K=\frac{pmt ((ip+1)^{duree}-1)}{ip (ip+1)^{duree}}
+		\end{equation}
+\end{enumerate}
+
+\subsection{Calcul du taux annuel}
+Connaissant $K$, $pmt$, $periodicite$, $duree$ et $date\_initiale$, cherchons $i$.
+
+Il n'existe pas de formule algébrique pour calculer le taux. Il convient de procéder par une recherche numérique approchée par incrémentation ou décrémentation successives (de 0,001\% par exemple) d'un taux estimé puis de mesurer l'écart obtenu entre $pmt$ connu et $pmt$ calculé.
+
+Prendre garde au nombre maximum d'itérations acceptable.
+
+\subsection{Calcul du nombre de périodes}
+Connaissant $K$, $i$, $periodicite$, $pmt$ et $date\_initiale$, cherchons $duree$.
+
+\begin{enumerate}
+	\item Calculer $ip$ :
+		\begin{equation}
+			ip=\frac{i}{periodicite}
+		\end{equation}
+
+	\item Calculer $duree$ :
+		\begin{equation}
+			duree=\frac{log(-(pmt/(ip\times K-pmt)))}{log(1+ip)}
+		\end{equation} 
+
+	\item Arrondir la valeur de $duree$ à l'entier supérieur.
+\end{enumerate}
+
+\subsection{Construction du tableau d'amortissement}
+La première ligne du tableau d'amortissement se construit en fonction des données initiales, en utilisant les formules ci-dessus. Calculer aussi le capital restant dû de la première échéance avec :
+
+\begin{equation}
+	crd_0=K-ke
+\end{equation}
+
+Les $duree-1$ lignes successives se calculent itérativement :
+
+\begin{equation}
+	crd_i=crd_{i-1} - ke_i
+\end{equation}
+
+\begin{equation}
+	ipe_i=crd_{i-1} \times ip
+\end{equation}
+
+\begin{equation}
+	ke_i=pmt - ipe_i
+\end{equation}
+
+\vspace{3cm}
+\begin{center}
+	\noindent\small{\texttt{Copyright \copyright{} 2006--2015 Laboratoire de Recherche pour le Développement Local\\Tous droits réservés}}
+\end{center}
+
+\end{document}
