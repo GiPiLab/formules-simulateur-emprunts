@@ -1,236 +1,389 @@
-\documentclass[12pt,a4paper]{scrartcl}
+\documentclass[11pt,a4paper]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[kerning=true,tracking=true,spacing=true]{microtype}
 \usepackage[francais]{babel}
 \usepackage[T1]{fontenc}
-\usepackage[latin1]{inputenc}
 \usepackage{lmodern}
-\usepackage[margin=1.5cm, includeheadfoot]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[french,onelanguage,linesnumbered,longend]{algorithm2e}
+%\usepackage[margin=1.5cm, includeheadfoot]{geometry}
 \usepackage{hyperref}
 
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=black,
+	pdfauthor={Thibault Mondary, Laboratoire de Recherche pour le Développement Local},
+	pdftitle={Simulateur d'emprunts, formules et tableaux d'amortissement},
+	pdfsubject={formules mathématiques du simulateur d'emprunts}
+}
 
-\addtolength{\parskip}{\baselineskip}
 
-\title{Calcul de tableaux d'amortissement}
-\date{}
+
+%\addtolength{\parskip}{\baselineskip}
+
+\SetKwRepeat{Struct}{structure \{}{\}}%
+
+
+
+
+\title{Simulateur d'emprunts, formules et tableaux d'amortissement}
+\date{\today}
+\author{Thibault Mondary\\Laboratoire de Recherche pour le Développement Local\\\small\url{http://gipilab.org}}
 
 
 \begin{document}
 \maketitle
 
-\section{Tableau d'amortissement}
-Un emprunt est caract�ris� par :
+\section{Présentation}
+
+Un emprunt est caractérisé par :
 
 \begin{itemize}
-	\item une somme emprunt�e not�e $K$ ;
-	\item un taux annuel, en \%, not� $i$ ;
-	\item une p�riodicit� qui correspond � la fr�quence de remboursement, not� $periodicite$. Elle est usuellement exprim�e en parties d'une ann�e et prend les valeurs 1 (remboursement annuel), 2 (semestriel), 4 (trimestriel) ou 12 (mensuel) ;
-	\item un taux p�riodique, not� $ip$ ;
-	\item une dur�e, not�e $duree$, exprim�e en p�riodes (mois, trimestres, semestres, ann�es) ;
-	\item la date de la premi�re �ch�ance, not�e $date\_initiale$ ;
-	\item la date de chaque �ch�ance, not�e $date$ ;
-	\item le num�ro de l'�ch�ance, not� $ieme$, entre 1 et $duree$ ;
-	\item le montant de chaque �ch�ance, not� $pmt$ ;
-	\item la proportion de capital de chaque �ch�ance, not�e $ke$ ;
-	\item la proportion des int�r�ts de chaque �ch�ance, not�e $ipe$ ;
-	\item le capital restant d�, not� $crd$.
+	\item la somme empruntée (notée $sommeEmpruntee$);
+	\item le taux d'intérêt annuel, en \% (notée $tauxAnnuel$) ;
+	\item la périodicité de remboursement (notée $periodicite$), qui peut être annuelle, semestrielle, trimestrielle ou mensuelle ;
+	\item la durée totale de l'emprunt, exprimée nombre d'échéances (notée $duree$) ;
+	\item la somme à rembourser à chaque échéance $i$ (notée $paiement_{i}$) ;
 \end{itemize}
 
-Un tableau d'amortissement comprendra les colonnes $ieme$, $date$, $pmt$, $ke$, $ipe$ et $crd$.
+Connaissant la périodicité de remboursement et trois des quatre grandeurs caractérisant un emprunt, il est possible de calculer la grandeur manquante, ce qui permet de répondre à des questions comme :
 
-\section{Capital constant}
-Cet emprunt est caract�ris� par le fait que $ke$ est constant. 
+\begin{itemize}
+	\item Quelle somme vais-je rembourser chaque année si j'emprunte 1\,000\,000 euros à 4,5\% par an pendant 10 ans ? [calcul de l'échéance]
+	\item Combien de temps durerait un emprunt de 1\,000\,000 euros à 4,5\% par an en remboursant 126\,378,72 euros tous les ans ? [calcul de la durée]
+	\item Combien puis-je emprunter si je choisis de rembourser 126\,378,72 euros par an pendant 10 ans avec un taux d'intérêt de 4,5\% ? [calcul de la somme empruntée ou capital]
+	\item Quel est le taux d'intérêt appliqué à un emprunt de 1\,000\,000 euros pendant 10 ans en remboursant 126\,378,72 euros tous les ans ? [calcul du taux annuel]
+\end{itemize}
 
-\subsection{Calcul de la premi�re �ch�ance}
-Connaissant $K$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de d�terminer la valeur de $pmt_0$.
 
-\begin{enumerate}
-	\item Calculer $ip$ : 
-		\begin{equation}
-			ip=\frac{i}{periodicite}
-		\end{equation}
-	\item D�terminer la part de capital contenue dans chaque �ch�ance : 
-		\begin{equation}
-			ke = \frac{K}{duree}
-		\end{equation}
-	\item D�terminer la part des int�r�ts contenue dans la premi�re �ch�ance : 
-		\begin{equation}
-			ipe_0=K \times ip
-		\end{equation}
-	\item En d�duire la valeur de la premi�re �ch�ance :
-		\begin{equation}
-			pmt_0=ke+ipe_0
-		\end{equation}
-\end{enumerate}
 
-\subsection{Calcul du capital initial}
-Connaissant $pmt_0$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de d�terminer la valeur du capital initial $K$.
+La somme à rembourser à chaque échéance $i$ est composée d'une part de capital (notée $partCapital_{i}$) et d'une part d'intérêts (notée $partInterets_{i}$). La répartition entre ces deux valeurs est déterminée par le \emph{profil d'amortissement}. Un tableau d'amortissement présente ces valeurs de manière synthétique pour chaque échéance, un exemple est présenté sur le tableau \ref{tblAmort1}.
 
-\begin{enumerate}
-	\item Calculer $ip$ :
+
+\begin{table}
+\centering
+\caption{Emprunt de 1\,000\,000 à 4,5\% par an pendant 10 ans}
+\begin{tabular}{rrrrrr}
+i-eme & $date$ & $paiement$ & $partCapital$ & $partInterets$ & $restant$ \\ 
+\hline
+1 & 16/09/2015 & 126\,378,82 & 81\,378,82 & 45\,000 & 918\,621,18 \\ 
+2 & 16/09/2016 & 126\,378,82 & 85\,040,87 & 41\,337,95 & 833\,580,31 \\ 
+3 & 16/09/2017 & 126\,378,82 & 88\,867,71 & 37\,511,11 & 744\,712,6 \\ 
+4 & 16/09/2018 & 126\,378,82 & 92\,866,75 & 33\,512,07 & 651\,845,85 \\ 
+5 & 16/09/2019 & 126\,378,82 & 97\,045,76 & 29\,333,06 & 554\,800,09 \\ 
+6 & 16/09/2020 & 126\,378,82 & 101\,412,82 & 24\,966 & 453\,387,27 \\ 
+7 & 16/09/2021 & 126\,378,82 & 105\,976,39 & 20\,402,43 & 347\,410,88 \\ 
+8 & 16/09/2022 & 126\,378,82 & 110\,745,33 & 15\,633,49 & 236\,665,54 \\ 
+9 & 16/09/2023 & 126\,378,82 & 115\,728,87 & 10\,649,95 & 120\,936,67 \\ 
+10 & 16/09/2024 & 126\,378,82 & 120\,936,67 & 5442,15 & 0,00 \\ 
+\hline
+\multicolumn{1}{l}{Total} &  & 1\,263\,788,22 & 1\,000\,000 & 263\,788,22 & \\ 
+\end{tabular}
+\label{tblAmort1}
+\end{table}
+
+
+
+Deux profils d'amortissement usuels sont présentés dans la suite de ce document, le profil à échéances constantes et celui à capital constant. Le profil à échéances constantes impose que la somme remboursée lors de chaque échéance ne varie pas durant la durée de l'emprunt. Le profil d'amortissement à capital constant impose quant à lui que la part de capital contenue dans la somme remboursée lors de chaque échéance reste constante. En conséquence, la valeur remboursée à chaque paiement n'est plus constante.
+
+Le tableau \ref{tblAmort2} présente le même emprunt que le tableau \ref{tblAmort1} mais avec un profil à capital constant. On remarque que si la somme empruntée est la même (1\,000\,000), le coût total de l'emprunt (total des échéances) est inférieur (1\,247\,500 par rapport à 1\,263\,788,22). En contrepartie durant la première moitié de la durée de l'emprunt, les sommes remboursées chaque année sont plus élevées.
+
+
+\begin{table}
+\centering
+\caption{Emprunt de 1\,000\,000 à 4,5\% par an pendant 10 ans, profil capital constant}
+\begin{tabular}{rrrrrr}
+i-eme & $date$ & $paiement$ & $partCapital$ & $partInterets$ & $restant$ \\ 
+	\hline
+	1 & 16/09/2015 & 145\,000,00& 100\,000,00& 45\,000,00&900\,000,00\\ 
+	2 & 16/09/2016 & 140\,500,00& 100\,000,00& 40\,500,00&800\,000,00\\ 
+	3 & 16/09/2017 & 136\,000,00& 100\,000,00& 36\,000,00&700\,000,00\\ 
+	4 & 16/09/2018 & 131\,500,00& 100\,000,00& 31\,500,00&600\,000,00\\ 
+	5 & 16/09/2019 & 127\,000,00& 100\,000,00& 27\,000,00&500\,000,00\\ 
+	6 & 16/09/2020 & 122\,500,00& 100\,000,00& 22\,500,00&400\,000,00\\ 
+	7 & 16/09/2021 & 118\,000,00& 100\,000,00& 18\,000,00&300\,000,00\\ 
+	8 & 16/09/2022 & 113\,500,00& 100\,000,00& 13\,500,00&200\,000,00\\ 
+	9 & 16/09/2023 & 109\,000,00& 100\,000,00& 9\,000,00&100\,000,00\\ 
+	10& 16/09/2024 & 104\,500,00& 100\,000,00& 4\,500,00& 0,00\\ 
+	\hline
+	\multicolumn{1}{l}{Total} & \multicolumn{1}{l}{} & 1\,247\,500,00 & 1\,000\,000,00 & 247\,500,00 & \\ 
+\end{tabular}
+\label{tblAmort2}
+\end{table}
+
+
+\section{Profil d'amortissement à échéances constantes}
+Dans la suite du document, la valeur de $periodicite$ est définie comme le nombre de périodes dans une année, ainsi :
+\begin{equation}
+	periodicite =
+	\begin{cases}
+		12 & \text{en cas de remboursement mensuel} \\
+		4 & \text{en cas de remboursement trimestriel} \\
+		2 & \text{en cas de remboursement semestriel} \\
+		1 & \text{en cas de remboursement annuel} \\
+	\end{cases}
+	\label{eqnperiodicite}
+\end{equation}
+
+Dans cette section nous présentons les formules permettant de calculer la somme à payer, la somme empruntée, le taux d'intérêts annuel et la durée d'un emprunt dont l'amortissement s'effectue selon le profil à échéances constantes. La valeur de $periodicite$ est supposée connue et est définie sur l'équation \ref{eqnperiodicite}.
+
+
+\subsection{Calcul de la somme à payer à chaque échéance}
+\emph{Quelle somme vais-je rembourser chaque année si j'emprunte 1\,000\,000 euros à 4,5\% par an pendant 10 ans ?}
+
+
+Soit un emprunt dont la somme empruntée, le taux annuel et la durée sont connus, la somme à payer à chaque échéance vaut :
+\begin{equation}
+	paiement=\begin{cases}
+	\frac{sommeEmpruntee}{duree} & \text{si } tauxAnnuel = 0 \\
+	\frac{sommeEmpruntee \times \frac{tauxAnnuel}{periodicite}}{1-(1+\frac{tauxAnnuel}{periodicite})^{-duree}} & \text{si } tauxAnnuel > 0
+	\end{cases}
+\end{equation}
+		
+
+\subsection{Calcul de la somme empruntée}
+\emph{Combien puis-je emprunter si je choisis de rembourser 126\,378,72 euros par an pendant 10 ans avec un taux d'intérêt de 4,5\% ?}
+
+Soit un emprunt dont le taux annuel, la durée et la somme à payer à chaque période ($paiement$) sont connus, la somme empruntée vaut :
+
 		\begin{equation}
-			ip=\frac{i}{periodicite}
+			sommeEmpruntee=\frac{paiement \times ((\frac{tauxAnnuel}{periodicite}+1)^{duree}-1)}{\frac{tauxAnnuel}{periodicite} \times (\frac{tauxAnnuel}{periodicite}+1)^{duree}}
 		\end{equation}
-	\item En d�duire le montant du capital initial :
-		\begin{equation}
-			K=\frac{pmt_0 \times duree}{1+duree \times ip}
-		\end{equation}
-	\item D�terminer la part de capital contenue dans chaque �ch�ance : 
-		\begin{equation}
-			ke = \frac{K}{duree}
-		\end{equation}
-	\item D�terminer la part des int�r�ts contenue dans la premi�re �ch�ance : 
-		\begin{equation}
-			ipe_0=K \times ip
-		\end{equation}
-\end{enumerate}
+
+\subsection{Calcul de la durée de l'emprunt}
+\emph{Combien de temps durerait un emprunt de 1\,000\,000 euros à 4,5\% par an en remboursant 126\,378,72 euros tous les ans ?}
+
+Soit un emprunt dont la somme empruntée, le taux annuel et la somme à payer lors de chaque échéance sont connus, sa durée vaut (arrondir à l'entier supérieur) :
+
+
+\begin{equation}
+	duree=\lceil\frac{log(-(paiement/(\frac{tauxAnnuel}{periodicite}\times sommeEmpruntee-paiement)))}{log(1+\frac{tauxAnnuel}{periodicite})}\rceil
+\end{equation} 
+	
+
+
 
 \subsection{Calcul du taux annuel}
-Connaissant $K$, $pmt_0$, $periodicite$, $duree$ et $date\_initiale$, cherchons $i$.
+\emph{Quel est le taux d'intérêt appliqué à un emprunt de 1\,000\,000 euros pendant 10 ans en remboursant 126\,378,72 euros tous les ans ?}
 
-\begin{enumerate}
-	\item D�terminer la part de capital contenue dans chaque �ch�ance : 
+Soit un emprunt dont la somme empruntée, la durée et la somme à payer lors de chaque échéance sont connus. Il n'existe pas de formule mathématique pour déterminer directement le taux annuel. Une solution simple pour approximer le taux annuel est de faire varier la valeur du taux, de calculer $paiement$ à l'aide de ce taux, puis de mesurer l'écart obtenu entre le $paiement$ connu et le $paiement$ calculé, comme présenté sur l'algorithme \ref{algoTauxEC}.
+
+\begin{algorithm}
+	\KwIn{$paiement,sommeEmpruntee,duree,periodicite$}
+	\KwResult{Le taux annuel ou $-1$ en cas de taux non trouvé}
+	\BlankLine
+	\lIf{$sommeEmpruntee = paiement \times duree$}{\Return $0$}
+	\BlankLine
+	$maxIterations \leftarrow 1000000$ ; $iteration \leftarrow 0$\;
+	\tcc{Taux calculé et pas d'incrémentation}
+	$increment \leftarrow 100000$ ; $tauxAnnuel \leftarrow 0,000001$\;
+	\tcc{Granularité maxi pour $increment$ et valeur calculée}
+	$diviseurMax \leftarrow 0,00001$ ; $paiementCalcule \leftarrow 0$\;
+	$sensVariationTaux \leftarrow faux$ ; $compteurRebonds \leftarrow 0$\;
+	\BlankLine
+	\While{$iteration<maxIterations$ \textbf{\emph{et}} $compteurRebonds<4$ \textbf{\emph{et}} $tauxAnnuel>0$}{
+		$iteration \leftarrow iteration + 1$\;
+		\tcc{Calcule la somme à payer avec le taux en cours}
+		$paiementCalcule \leftarrow calculePaiementEcheanceConstante(sommeEmpruntee,tauxAnnuel,duree,periodicite)$\;
+		\tcc{Compare avec la somme à payer attendue}
+		\lIf{$paiementCalcule = paiement$}{\Return $tauxAnnuel$}
+		\ElseIf{$paiementCalcule < paiement$}{
+			$tauxAnnuel \leftarrow tauxAnnuel + increment$\;
+			\If{$sensVariationTaux = faux$}{
+				
+				\lIf{$increment > diviseurMax$}{
+					$increment \leftarrow increment \div 10$
+					}
+					$sensVariationTaux \leftarrow vrai$\;
+					$compteurRebonds \leftarrow compteurRebonds + 1$\;
+				}
+				\lElse{$compteurRebonds \leftarrow 0$}						
+			}
+			\Else{
+			$tauxAnnuel \leftarrow tauxAnnuel - increment$\;
+
+			\If{$sensVariationTaux = vrai$}{
+				\lIf{$increment > diviseurMax$}{
+					$increment \leftarrow increment \div 10$
+				}
+				$sensVariationTaux \leftarrow faux$\;
+				$compteurRebonds \leftarrow compteurRebonds + 1$\;
+			}
+			\lElse{$compteurRebonds \leftarrow 0$}						
+			} 
+		}
+		
+		\lIf{$tauxAnnuel < 0$\textbf{\emph{ ou }}$iteration = maxIterations$}{\Return $-1$}
+		\lElse{\Return $tauxAnnuel$}
+\caption{Approximation du taux d'intérêts annuel, échéances constantes}	
+\label{algoTauxEC}
+\end{algorithm}
+
+
+\section{Profil d'amortissement à capital constant}
+Dans cette section nous présentons les formules permettant de calculer la somme à payer, la somme empruntée, le taux d'intérêts annuel et la durée d'un emprunt dont l'amortissement s'effectue selon le profil à capital constant, c'est-à-dire pour lequel la valeur de $partCapital$ ne change pas. La valeur de $periodicite$ est supposée connue et est définie sur l'équation \ref{eqnperiodicite}.
+
+
+\subsection{Calcul de la somme à payer à la première échéance}
+\emph{Quelle somme vais-je rembourser la première année\footnote{Dans ce profil $paiement$ étant variable les autres échéances se retrouvent en calculant le tableau d'amortissement.} si j'emprunte 1\,000\,000 euros à 4,5\% par an pendant 10 ans ?}
+
+
+Soit un emprunt dont la somme empruntée, le taux annuel et la durée sont connus, la somme à payer lors de la première échéance vaut :
+\begin{equation}
+	paiement_1 = sommeEmpruntee \times \frac{tauxAnnuel}{periodicite} + \frac{sommeEmpruntee}{duree}
+\end{equation}
+		
+
+\subsection{Calcul de la somme empruntée}
+\emph{Combien puis-je emprunter si je choisis de rembourser 126\,378,72 euros lors de la première échéance, pendant 10 ans avec un taux d'intérêt de 4,5\% ?}
+
+Soit un emprunt dont le taux annuel, la durée et la somme à payer lors de la première période ($paiement_1$) sont connus, la somme empruntée vaut :
+
 		\begin{equation}
-			ke = \frac{K}{duree}
+			sommeEmpruntee=\frac{paiement_1 \times duree}{\frac{tauxAnnuel}{periodicite} \times duree + 1}
 		\end{equation}
 
-	\item D�terminer la part des int�r�ts contenue dans la premi�re �ch�ance : 
-		\begin{equation}
-			ipe_0=pmt_0-ke
-		\end{equation}
+\subsection{Calcul de la durée de l'emprunt}
+\emph{Combien de temps durerait un emprunt de 1\,000\,000 euros à 4,5\% par an, en remboursant 126\,378,72 euros la première année ?}
 
-	\item En d�duire le taux annuel :
-		\begin{equation}
-			i=\frac{ipe_0}{K}
-		\end{equation}
+	Soit un emprunt dont la somme empruntée, le taux annuel et la somme à payer lors de la première échéance ($paiement_1$) sont connus, sa durée vaut (arrondir à l'entier supérieur) :
 
-\end{enumerate}
-
-
-\subsection{Calcul du nombre de p�riodes}
-Connaissant $K$, $i$, $periodicite$, $pmt_0$ et $date\_initiale$, cherchons $duree$.
-
-\begin{enumerate}
-	\item Calculer $ip$ :
-		\begin{equation}
-			ip=\frac{i}{periodicite}
-		\end{equation}
-
-	\item Calculer $ipe_0$ :
-		\begin{equation}
-			ipe_0 = K \times ip
-		\end{equation}
-
-	\item Calculer $ke$ :
-		\begin{equation}
-			ke=pmt_0-ipe_0
-		\end{equation}
-
-	\item En d�duire le nombre de p�riodes :
-		\begin{equation}
-			duree=\frac{K}{ke}
-		\end{equation} 
-
-\end{enumerate}
-
-\subsection{Construction du tableau d'amortissement}
-La premi�re ligne du tableau d'amortissement se construit en fonction des donn�es initiales, en utilisant les formules ci-dessus. Calculer aussi le capital restant d� de la premi�re �ch�ance avec :
 
 \begin{equation}
-	crd_0=K-ke
-\end{equation}
+	duree=\lceil\frac{sommeEmpruntee}{paiement_1-(sommeEmpruntee \times \frac{tauxAnnuel}{periodicite})}\rceil
+\end{equation} 
+	
 
-Les $duree-1$ lignes successives se calculent it�rativement :
 
-\begin{equation}
-	crd_i=crd_{i-1} - ke
-\end{equation}
-
-\begin{equation}
-	ipe_i=crd_{i-1} \times ip
-\end{equation}
-
-\begin{equation}
-	pmt_i=crd_{i-1} \times ip + ke
-\end{equation}
-
-\section{\'Ech�ance constante}
-Cet emprunt est caract�ris� par le fait que la somme � payer chaque mois par l'emprunteur (l'�ch�ance) est constante.
-
-\subsection{Calcul de l'�ch�ance}
-Connaissant $K$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de d�terminer la valeur de $pmt$.
-
-\begin{enumerate}
-	\item Calculer $ip$ : 
-		\begin{equation}
-			ip=\frac{i}{periodicite}
-		\end{equation}
-	\item Calculer ensuite la valeur de $pmt$ :
-		\begin{equation}
-			pmt=\frac{K\times ip}{1-(1+ip)^{-duree}}
-		\end{equation}
-\end{enumerate}
-
-\subsection{Calcul du capital initial}
-Connaissant $pmt$, $i$, $periodicite$, $duree$ et $date\_initiale$, il s'agit de d�terminer la valeur du capital initial $K$ accessible.
-
-\begin{enumerate}
-	\item Calculer $ip$ :
-		\begin{equation}
-			ip=\frac{i}{periodicite}
-		\end{equation}
-	\item Calculer $K$ :
-		\begin{equation}
-			K=\frac{pmt ((ip+1)^{duree}-1)}{ip (ip+1)^{duree}}
-		\end{equation}
-\end{enumerate}
 
 \subsection{Calcul du taux annuel}
-Connaissant $K$, $pmt$, $periodicite$, $duree$ et $date\_initiale$, cherchons $i$.
+\emph{Quel est le taux d'intérêt appliqué à un emprunt de 1\,000\,000 euros pendant 10 ans en remboursant 126\,378,72 euros la première année ?}
 
-Il n'existe pas de formule alg�brique pour calculer le taux. Il convient de proc�der par une recherche num�rique approch�e par incr�mentation ou d�cr�mentation successives (de 0,001\% par exemple) d'un taux estim� puis de mesurer l'�cart obtenu entre $pmt$ connu et $pmt$ calcul�.
-
-Prendre garde au nombre maximum d'it�rations acceptable.
-
-\subsection{Calcul du nombre de p�riodes}
-Connaissant $K$, $i$, $periodicite$, $pmt$ et $date\_initiale$, cherchons $duree$.
-
-\begin{enumerate}
-	\item Calculer $ip$ :
-		\begin{equation}
-			ip=\frac{i}{periodicite}
-		\end{equation}
-
-	\item Calculer $duree$ :
-		\begin{equation}
-			duree=\frac{log(-(pmt/(ip\times K-pmt)))}{log(1+ip)}
-		\end{equation} 
-
-	\item Arrondir la valeur de $duree$ � l'entier sup�rieur.
-\end{enumerate}
-
-\subsection{Construction du tableau d'amortissement}
-La premi�re ligne du tableau d'amortissement se construit en fonction des donn�es initiales, en utilisant les formules ci-dessus. Calculer aussi le capital restant d� de la premi�re �ch�ance avec :
+Soit un emprunt dont la somme empruntée, la durée et la somme à payer lors de la première période sont connus. Le taux annuel est déterminé par :
 
 \begin{equation}
-	crd_0=K-ke
+	tauxAnnuel=\frac{paiement_1 - \frac{sommeEmpruntee}{duree}}{sommeEmpruntee}\times{periodicite}
 \end{equation}
 
-Les $duree-1$ lignes successives se calculent it�rativement :
 
-\begin{equation}
-	crd_i=crd_{i-1} - ke_i
-\end{equation}
 
-\begin{equation}
-	ipe_i=crd_{i-1} \times ip
-\end{equation}
+\section{Construction des tableaux d'amortissement}
+Les tableaux d'amortissement se construisent ligne par ligne. L'algorithme \ref{algoTableauEC} présente la construction d'un tableau pour le profil à échéances constantes, tandis que l'algorithme \ref{algoTableauCC}, très similaire, se focalise sur le profil à capital constant.
 
-\begin{equation}
-	ke_i=pmt - ipe_i
-\end{equation}
+\begin{algorithm}
+	\KwIn{$sommeEmpruntee, tauxAnnuel, periodicite, duree, dateDebut$}
+	\KwResult{Le tableau d'amortissement}
+	\tcc{Structure de données représentant une ligne du tableau}
+	\Struct{Echeance}{
+		$ieme$: entier positif\\
+		$date$: date\\
+		$paiement$: réel positif\\
+		$partCapital$: réel positif\\
+		$partInterets$: réel positif\\
+		$restantDu$: réel positif\\
+	}
 
-\vspace{3cm}
+	\tcc{Le tableau d'amortissement est une liste d'échéances}
+
+	$tableauAmortissement \leftarrow liste<Echeance>()$\;
+	
+	\BlankLine
+	\tcc{Calcule la valeur précise de l'échéance} 
+	$paiement \leftarrow calculePaiementEcheanceConstante(sommeEmpruntee,tauxAnnuel,duree,periodicite)$\;
+
+	$dateEcheance \leftarrow dateDebut$\;
+	$tauxPeriodique \leftarrow tauxAnnuel \div periodicite$\;
+	$partInterets \leftarrow sommeEmpruntee \times tauxPeriodique$\;
+	$partCapital \leftarrow paiement - partInterets$\;
+	$restantDu \leftarrow sommeEmpruntee - partCapital$\;
+
+	
+	
+	\For{$i \leftarrow 1$ \KwTo $duree$}{
+
+		\Switch{$periodicite$}{
+			\uCase(//mensuelle){12}{$dateEcheance \leftarrow dateEcheance + 1\ mois$}
+			\uCase(//trimestrielle){4}{$dateEcheance \leftarrow dateEcheance + 3\ mois$}
+			\uCase(//semestrielle){2}{$dateEcheance \leftarrow dateEcheance + 6\ mois$}
+			\uCase(//annuelle){1}{$dateEcheance \leftarrow dateEcheance + 12\ mois$}
+		}
+
+		$uneEcheance \leftarrow \{ieme \leftarrow i;date \leftarrow dateEcheance;paiement \leftarrow paiement;partCapital \leftarrow partCapital;partInterets \leftarrow partInterets;restantDu \leftarrow restantDu\}$\;
+		\BlankLine
+		$tableauAmortissement.ajouter(uneEcheance)$\;
+		\BlankLine
+		$partInterets \leftarrow restantDu \times tauxPeriodique$\;
+		$partCapital \leftarrow paiement - partInterets$\;
+		$restantDu \leftarrow restantDu - partCapital$\;
+	}
+	\Return $tableauAmortissement$\;
+
+\caption{Tableau d'amortissement échéances constantes}	
+\label{algoTableauEC}
+\end{algorithm}
+
+
+\begin{algorithm}
+	\KwIn{$sommeEmpruntee, tauxAnnuel, periodicite, duree, dateDebut$}
+	\KwResult{Le tableau d'amortissement}
+	\tcc{Structure de données représentant une ligne du tableau}
+	\Struct{Echeance}{
+		$ieme$: entier positif\\
+		$date$: date\\
+		$paiement$: réel positif\\
+		$partCapital$: réel positif\\
+		$partInterets$: réel positif\\
+		$restantDu$: réel positif\\
+	}
+
+	\tcc{Le tableau d'amortissement est une liste d'échéances}
+
+	$tableauAmortissement \leftarrow liste<Echeance>()$\;
+	
+	\BlankLine
+	\tcc{Calcule la valeur précise de la première échéance} 
+	$paiement \leftarrow calculePaiementCapitalConstant(sommeEmpruntee,tauxAnnuel,duree,periodicite)$\;
+
+	$dateEcheance \leftarrow dateDebut$\;
+	$tauxPeriodique \leftarrow tauxAnnuel \div periodicite$\;
+	$partInterets \leftarrow sommeEmpruntee \times tauxPeriodique$\;
+	$partCapital \leftarrow sommeEmpruntee \div duree$\;
+	$restantDu \leftarrow sommeEmpruntee - partCapital$\;
+
+	
+	
+	\For{$i \leftarrow 1$ \KwTo $duree$}{
+
+		\Switch{$periodicite$}{
+			\uCase(//mensuelle){12}{$dateEcheance \leftarrow dateEcheance + 1\ mois$}
+			\uCase(//trimestrielle){4}{$dateEcheance \leftarrow dateEcheance + 3\ mois$}
+			\uCase(//semestrielle){2}{$dateEcheance \leftarrow dateEcheance + 6\ mois$}
+			\uCase(//annuelle){1}{$dateEcheance \leftarrow dateEcheance + 12\ mois$}
+		}
+
+		$uneEcheance \leftarrow \{ieme \leftarrow i;date \leftarrow dateEcheance;paiement \leftarrow paiement;partCapital \leftarrow partCapital;partInterets \leftarrow partInterets;restantDu \leftarrow restantDu\}$\;
+		\BlankLine
+		$tableauAmortissement.ajouter(uneEcheance)$\;
+		\BlankLine
+		$partInterets \leftarrow restantDu \times tauxPeriodique$\;
+		$restantDu \leftarrow restantDu - partCapital$\;
+		$paiement \leftarrow partInterets + partCapital$\;
+	}
+	\Return $tableauAmortissement$\;
+
+\caption{Tableau d'amortissement capital constant}	
+\label{algoTableauCC}
+\end{algorithm}
+
+
+\newpage
+
+\vspace*{\fill}
+
 \begin{center}
-	\noindent\small{\texttt{Copyright \copyright{} 2006--2015 Laboratoire de Recherche pour le D�veloppement Local\\Tous droits r�serv�s}}
+\includegraphics{by-nc-sa_eu.pdf}
+
+Cette oeuvre du Laboratoire de Recherche pour le Développement Local est mise à disposition selon les termes de la licence Creative Commons Attribution - Pas d’Utilisation Commerciale - Partage dans les Mêmes Conditions 4.0 International\\\url{http://creativecommons.org/licenses/by-nc-sa/4.0/}
 \end{center}
 
+\vspace*{\fill}
 \end{document}
