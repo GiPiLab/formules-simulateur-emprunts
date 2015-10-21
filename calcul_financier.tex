@@ -146,7 +146,11 @@ Soit un emprunt dont la somme empruntée, le taux annuel et la durée sont connu
 Soit un emprunt dont le taux annuel, la durée et la somme à payer à chaque période ($paiement$) sont connus, la somme empruntée vaut :
 
 		\begin{equation}
-			sommeEmpruntee=\frac{paiement \times ((\frac{tauxAnnuel}{periodicite}+1)^{duree}-1)}{\frac{tauxAnnuel}{periodicite} \times (\frac{tauxAnnuel}{periodicite}+1)^{duree}}
+			sommeEmpruntee=
+			\begin{cases}
+				\frac{paiement \times ((\frac{tauxAnnuel}{periodicite}+1)^{duree}-1)}{\frac{tauxAnnuel}{periodicite} \times (\frac{tauxAnnuel}{periodicite}+1)^{duree}}&\text{si }tauxAnnuel \neq 0\\
+				paiement \times duree&\text{sinon}
+			\end{cases}
 		\end{equation}
 
 \subsection{Calcul de la durée de l'emprunt}
@@ -155,8 +159,13 @@ Soit un emprunt dont le taux annuel, la durée et la somme à payer à chaque p�
 Soit un emprunt dont la somme empruntée, le taux annuel et la somme à payer lors de chaque échéance sont connus, sa durée vaut (arrondir à l'entier supérieur) :
 
 
+
 \begin{equation}
-	duree=\lceil\frac{log(-(paiement/(\frac{tauxAnnuel}{periodicite}\times sommeEmpruntee-paiement)))}{log(1+\frac{tauxAnnuel}{periodicite})}\rceil
+	duree=
+	\begin{cases}
+		\lceil\frac{log(-(paiement/(\frac{tauxAnnuel}{periodicite}\times sommeEmpruntee-paiement)))}{log(1+\frac{tauxAnnuel}{periodicite})}\rceil& \text{si } tauxAnnuel \neq 0\\
+		\lceil\frac{sommeEmpruntee}{paiement}\rceil& \text{sinon}
+	\end{cases}
 \end{equation} 
 	
 
